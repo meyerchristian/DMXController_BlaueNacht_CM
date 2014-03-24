@@ -10,5 +10,6 @@ public:
 	void draw();
 	
 	ofxDmx dmx;
-	int level;
+	ofColor level1;
+    ofColor level2;    
 };
