@@ -9,7 +9,9 @@ public:
 	void update();
 	void draw();
 	
+    void keyPressed(int key);
+
 	ofxDmx dmx;
-	ofColor level1;
-    ofColor level2;    
+	ofShortColor level1;
+    ofShortColor level2;
 };
