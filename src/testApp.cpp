@@ -1,7 +1,11 @@
 #include "testApp.h"
 
+
 //--------------------------------------------------------------
 void testApp::setup(){
+    
+    // OSC
+    osc.setup();
     
     // UI setup
     ofSetVerticalSync(true);
@@ -15,32 +19,52 @@ void testApp::setup(){
     hasDevice = false;
     dmx = new ofxDmx;
     hasDevice = dmx->connect(DEVICE);
-   
+    
     // Color presetting
-    col_01.setHsb(186, 200, 150);   // left wall
-    col_02.setHsb(255, 255, 168);   // heart
-    col_03.setHsb(178, 74, 155);    // right wall
-    col_04.setHsb(81, 178, 181);    // trees
-
+    col_01.setHsb(0, 0, 0);   // left wall
+    col_02.setHsb(0, 0, 0);   // heart
+    col_03.setHsb(0, 0, 0);   // right wall
+    col_04.setHsb(0, 0, 0);   // trees
+    
+    /*
     col_01.getHue()/255;
     col_01.getSaturation()/255;
     col_01.getBrightness()/255;
-    
+    */
+     
     // Terminal control
     updateConsole();
     
     // DMX control
     updateDMX();
     
+    
+
 }
 
 
 //--------------------------------------------------------------
 void testApp::update(){
     
-  /*  if (int(ofGetElapsedTimef())/2 == true) {
-        col_01.setHue(10);
-    } */
+    if (touchosc == true) {
+    osc.listen();
+
+    col_01.setHue(osc.settings[0]);
+    col_01.setSaturation(osc.settings[1]);
+    col_01.setBrightness(osc.settings[2]);
+    
+    col_02.setHue(osc.settings[3]);
+    col_02.setSaturation(osc.settings[4]);
+    col_02.setBrightness(osc.settings[5]);
+    
+    col_03.setHue(osc.settings[6]);
+    col_03.setSaturation(osc.settings[7]);
+    col_03.setBrightness(osc.settings[8]);
+    
+    col_04.setHue(osc.settings[9]);
+    col_04.setSaturation(osc.settings[10]);
+    col_04.setBrightness(osc.settings[11]);
+    }
 }
 
 //--------------------------------------------------------------
@@ -48,7 +72,7 @@ void testApp::setGui1(){
     
     gui1 = new ofxUISuperCanvas("col_01 - left wall");
     gui1->addSpacer();
-
+    
     gui1->addSlider("Hue", 0, 1, col_01.getHue()/255);
     gui1->addSlider("Saturation", 0, 1, col_01.getSaturation()/255);
     gui1->addSlider("Brightness", 0, 1, col_01.getBrightness()/255);
@@ -150,31 +174,7 @@ void testApp::gui2Event(ofxUIEventArgs &e){
         updateDMX();
     }
 }   // Control heart
-void testApp::gui3Event(ofxUIEventArgs &e){
-    
-    string name = e.getName();
-    int kind = e.getKind();
-    
-    if (kind == OFX_UI_WIDGET_SLIDER_H) {
-        
-        ofxUISlider *slider = (ofxUISlider*) e.widget;
-        
-        if(name == "Hue"){
-            col_03.setHue(slider->getValue()*255);
-        }
-        
-        if(name == "Saturation"){
-            col_03.setSaturation(slider->getValue()*255);
-        }
-        
-        if(name == "Brightness"){
-            col_03.setBrightness(slider->getValue()*255);
-        }
-        
-        updateConsole();
-        updateDMX();
-    }
-}   // Control right wall
+
 void testApp::gui4Event(ofxUIEventArgs &e){
     
     string name = e.getName();
@@ -200,10 +200,46 @@ void testApp::gui4Event(ofxUIEventArgs &e){
         updateDMX();
     }
 }   // Control trees
+void testApp::gui3Event(ofxUIEventArgs &e){
+    
+    string name = e.getName();
+    int kind = e.getKind();
+    
+    if (kind == OFX_UI_WIDGET_SLIDER_H) {
+        
+        ofxUISlider *slider = (ofxUISlider*) e.widget;
+        
+        if(name == "Hue"){
+            col_03.setHue(slider->getValue()*255);
+        }
+        
+        if(name == "Saturation"){
+            col_03.setSaturation(slider->getValue()*255);
+        }
+        
+        if(name == "Brightness"){
+            col_03.setBrightness(slider->getValue()*255);
+        }
+        
+        updateConsole();
+        updateDMX();
+    }
+}   // Control right wall
+
 
 //--------------------------------------------------------------
 void testApp::draw(){
-   
+    
+    if (touchosc == false){
+        ofSetColor(255,255,255);
+        ofDrawBitmapString("1,2: TouchOSC deactivated " /*+ ofToString(bool(touchosc))*/,15, 590);
+    }
+    else if (touchosc == true)
+    {ofSetColor(255,255,255);
+        ofDrawBitmapString("1,2: TouchOSC activated " /*+ ofToString(bool(touchosc))*/,15, 590);
+    };
+
+    
     // ColorControl left wall
     ofFill();
 	ofSetRectMode(OF_RECTMODE_CORNER);
@@ -211,7 +247,7 @@ void testApp::draw(){
 	ofRect(240, 10, 140, 128);
     
     ofSetColor(255,255,255);
-    ofDrawBitmapString("HSB:" +ofToString(int(col_01.getHue()))+ " " +ofToString(int(col_01.getSaturation()))+ " " +ofToString(int(col_01.getBrightness())), 245, 30 );
+    ofDrawBitmapString("HSB: " +ofToString(int(col_01.getHue()))+ " " +ofToString(int(col_01.getSaturation()))+ " " +ofToString(int(col_01.getBrightness())), 245, 30 );
     ofDrawBitmapString("RGB: "+ofToString(int(col_01.r))+ " " +ofToString(int(col_01.g))+ " " +ofToString(int(col_01.b)), 245, 45 );
     
     // ColorControl heart
@@ -221,9 +257,9 @@ void testApp::draw(){
 	ofRect(240, 150, 140,128);
     
 	ofSetColor(255,255,255);
-    ofDrawBitmapString("HSB:" +ofToString(int(col_02.getHue()))+ " " +ofToString(int(col_02.getSaturation()))+ " " +ofToString(int(col_02.getBrightness())), 245, 170 );
+    ofDrawBitmapString("HSB: " +ofToString(int(col_02.getHue()))+ " " +ofToString(int(col_02.getSaturation()))+ " " +ofToString(int(col_02.getBrightness())), 245, 170 );
     ofDrawBitmapString("RGB: "+ofToString(int(col_02.r))+ " " +ofToString(int(col_02.g))+ " " +ofToString(int(col_02.b)), 245, 185 );
-
+    
     // ColorControl right wall
     ofFill();
 	ofSetRectMode(OF_RECTMODE_CORNER);
@@ -231,9 +267,9 @@ void testApp::draw(){
 	ofRect(240, 290, 140,128);
     
 	ofSetColor(255,255,255);
-    ofDrawBitmapString("HSB:" +ofToString(int(col_03.getHue()))+ " " +ofToString(int(col_03.getSaturation()))+ " " +ofToString(int(col_03.getBrightness())), 245, 310 );
+    ofDrawBitmapString("HSB: " +ofToString(int(col_03.getHue()))+ " " +ofToString(int(col_03.getSaturation()))+ " " +ofToString(int(col_03.getBrightness())), 245, 310 );
     ofDrawBitmapString("RGB: "+ofToString(int(col_03.r))+ " " +ofToString(int(col_03.g))+ " " +ofToString(int(col_03.b)), 245, 325 );
-
+    
     // ColorControl trees
     ofFill();
 	ofSetRectMode(OF_RECTMODE_CORNER);
@@ -241,191 +277,198 @@ void testApp::draw(){
 	ofRect(240, 430, 140,128);
 	
     ofSetColor(255,255,255);
-    ofDrawBitmapString("HSB:" +ofToString(int(col_04.getHue()))+ " " +ofToString(int(col_04.getSaturation()))+ " " +ofToString(int(col_04.getBrightness())), 245, 450 );
+    ofDrawBitmapString("HSB: " +ofToString(int(col_04.getHue()))+ " " +ofToString(int(col_04.getSaturation()))+ " " +ofToString(int(col_04.getBrightness())), 245, 450 );
     ofDrawBitmapString("RGB: "+ofToString(int(col_04.r))+ " " +ofToString(int(col_04.g))+ " " +ofToString(int(col_04.b)), 245, 465 );
-
-    ofDrawBitmapString("Elapsed time [sec] : " + ofToString(int(ofGetElapsedTimef())), 105,573);
+    
+    ofDrawBitmapString("Elapsed time [sec] : " + ofToString(int(ofGetElapsedTimef())), 15,573);
     
     
-    }   // ColorControl
+}   // ColorControl
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
-    
+
+    if (key == '1') {
+        touchosc = true;
+    }
+    if (key == '2') {
+        touchosc = false;
+    }
+    /*
     if (key == 'a') {
         kb = true;
     }
     
     if (kb == true) {
-           ////#########################################################################################
+        ////#########################################################################################
         //#################################   FARBEN   ############################################
         //#########################################################################################
-   
-    if (key == 'q'){
-        col_01.setHue(0.1*255);
-        updateDMX();
-        updateConsole();
+        
+        if (key == 'q'){
+            col_01.setHue(0.1*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'w'){
+            col_01.setHue(0.2*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'e'){
+            col_01.setHue(0.3*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'r'){
+            col_01.setHue(0.4*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 't'){
+            col_01.setHue(0.5*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'z'){
+            col_01.setHue(0.6*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'u'){
+            col_01.setHue(0.7*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'i'){
+            col_01.setHue(0.8*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'o'){
+            col_01.setHue(0.9*255);
+            updateDMX();
+            updateConsole();
+        }
+        if (key == 'p'){
+            col_01.setHue(1.0*255);
+            updateDMX();
+            updateConsole();
+        }
+        
+        
+        
+        //#########################################################################################
+        //#################################   SŠttigung   #########################################
+        //#########################################################################################
+        
+        if (key == 'a'){
+            col_01.setSaturation(0.1*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 's'){
+            col_01.setSaturation(0.2*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 'd'){
+            col_01.setSaturation(0.3*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 'f'){
+            col_01.setSaturation(0.4*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 'g'){
+            col_01.setSaturation(0.5*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 'h'){
+            col_01.setSaturation(0.6*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 'j'){
+            col_01.setSaturation(0.7*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 'k'){
+            col_01.setSaturation(0.8*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == 'l'){
+            col_01.setSaturation(0.9*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '#'){
+            col_01.setSaturation(1.0*255);
+            dmx->update();
+            updateConsole();
+        }
+        
+        //#########################################################################################
+        //#################################   Helligkeit   ########################################
+        //#########################################################################################
+        
+        if (key == '1'){
+            col_01.setBrightness(0.1*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '2'){
+            col_01.setBrightness(0.2*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '3'){
+            col_01.setBrightness(0.3*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '4'){
+            col_01.setBrightness(0.4*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '5'){
+            col_01.setBrightness(0.5*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '6'){
+            col_01.setBrightness(0.6*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '7'){
+            col_01.setBrightness(0.7*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '8'){
+            col_01.setBrightness(0.8*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '9'){
+            col_01.setBrightness(0.9*255);
+            dmx->update();
+            updateConsole();
+        }
+        if (key == '0'){
+            col_01.setBrightness(1.0*255);
+            dmx->update();
+            updateConsole();
+        }
     }
-    if (key == 'w'){
-        col_01.setHue(0.2*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 'e'){
-        col_01.setHue(0.3*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 'r'){
-        col_01.setHue(0.4*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 't'){
-        col_01.setHue(0.5*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 'z'){
-        col_01.setHue(0.6*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 'u'){
-        col_01.setHue(0.7*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 'i'){
-        col_01.setHue(0.8*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 'o'){
-        col_01.setHue(0.9*255);
-        updateDMX();
-        updateConsole();
-    }
-    if (key == 'p'){
-        col_01.setHue(1.0*255);
-        updateDMX();
-        updateConsole();
-    }
-
-  
     
-//#########################################################################################
-//#################################   SŠttigung   #########################################
-//#########################################################################################
-   
-    if (key == 'a'){
-        col_01.setSaturation(0.1*255);
-          dmx->update();
-        updateConsole();
-    }
-    if (key == 's'){
-        col_01.setSaturation(0.2*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == 'd'){
-        col_01.setSaturation(0.3*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == 'f'){
-        col_01.setSaturation(0.4*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == 'g'){
-        col_01.setSaturation(0.5*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == 'h'){
-        col_01.setSaturation(0.6*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == 'j'){
-        col_01.setSaturation(0.7*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == 'k'){
-        col_01.setSaturation(0.8*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == 'l'){
-        col_01.setSaturation(0.9*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '#'){
-        col_01.setSaturation(1.0*255);
-        dmx->update();
-        updateConsole();
-    }
-    
-//#########################################################################################
-//#################################   Helligkeit   ########################################
-//#########################################################################################
-    
-    if (key == '1'){
-        col_01.setBrightness(0.1*255);
-          dmx->update();
-        updateConsole();
-    }
-    if (key == '2'){
-        col_01.setBrightness(0.2*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '3'){
-        col_01.setBrightness(0.3*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '4'){
-        col_01.setBrightness(0.4*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '5'){
-        col_01.setBrightness(0.5*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '6'){
-        col_01.setBrightness(0.6*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '7'){
-        col_01.setBrightness(0.7*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '8'){
-        col_01.setBrightness(0.8*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '9'){
-        col_01.setBrightness(0.9*255);
-        dmx->update();
-        updateConsole();
-    }
-    if (key == '0'){
-        col_01.setBrightness(1.0*255);
-        dmx->update();
-        updateConsole();
-    }
-    }
-    
-}   //ColorControlviaKeyboard
+     //ColorControlviaKeyboard */ }
 
 //--------------------------------------------------------------
 void testApp::keyReleased(int key){
@@ -466,7 +509,6 @@ void testApp::gotMessage(ofMessage msg){
 void testApp::dragEvent(ofDragInfo dragInfo){
     
 }
-
 
 //--------------------------------------------------------------
 void testApp::exit(){
@@ -516,7 +558,7 @@ void testApp::updateDMX(){
         dmx->setLevel(group_04.address + group_04.green, col_04.g);
         dmx->setLevel(group_04.address + group_04.blue, col_04.b );
         dmx->setLevel(group_04.address + group_04.master, 255);
-    
+        
         dmx->update();
     }
 }   // DMX control
