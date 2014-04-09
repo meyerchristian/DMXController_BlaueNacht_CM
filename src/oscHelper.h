@@ -9,18 +9,22 @@
 
 #include <iostream>
 
+
+
 class oscHelper{
+    
     
 public:
     
     void setup();
     void listen();
     float* getSettings();
-    float settings[12];
-    
+    float settings[14];
+
 private:
     
     ofxOscReceiver receiver;
+    
     
 };
 
